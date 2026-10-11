@@ -171,7 +171,60 @@ run_sudo() { # run a command as the administrator
 
 # ------------------------------------------------------------------------------------------------- the steps
 
-have_python() { command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; }
+# --- finding Python (without ever tripping Apple's "install developer tools" window) -------------------------------
+
+PYBIN=""
+python_ok() { [ -x "$1" ] && "$1" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; }
+
+# On a Mac without Apple's developer tools, /usr/bin/python3 is only a placeholder: the moment anything RUNS it, a
+# window pops up asking to install them. So we never run it unless the tools are really there.
+mac_placeholder_is_real() {
+  local d
+  d=$(xcode-select -p 2>/dev/null) || return 1
+  [ -x "$d/usr/bin/python3" ] || [ -x /Library/Developer/CommandLineTools/usr/bin/python3 ]
+}
+
+# Sets $PYBIN to a working Python 3.8+ if the computer has one: Natter's own private copy first, then the usual places.
+find_python() {
+  PYBIN=""
+  python_ok "$DEST/runtime/bin/python3" && { PYBIN="$DEST/runtime/bin/python3"; return 0; }
+  [ -n "${NATTER_IGNORE_SYSTEM_PYTHON:-}" ] && return 1      # (for testing the "no Python" path)
+  local c
+  for c in "$(command -v python3 2>/dev/null)" /opt/homebrew/bin/python3 /usr/local/bin/python3 \
+           /Library/Frameworks/Python.framework/Versions/Current/bin/python3 /usr/bin/python3; do
+    [ -n "$c" ] || continue
+    if [ "$(uname -s)" = Darwin ] && [ "$c" = /usr/bin/python3 ] && ! mac_placeholder_is_real; then continue; fi
+    python_ok "$c" && { PYBIN="$c"; return 0; }
+  done
+  return 1
+}
+have_python() { find_python; }
+
+# Natter's own copy of Python for Macs that have none. Pinned to one exact release and checked against its published
+# checksum. Downloaded with curl and unpacked with tar, so macOS does not treat it as "from the internet": no Apple
+# warning, no developer certificate needed.
+PBS_TAG="20261009"
+PBS_VER="3.12.15"
+PBS_SHA_ARM64="233f8e15255b3e1d1fd47ea5dd5230dfed803f371138e896e54d98c60ae19f6f"
+PBS_SHA_X64="fb3187d95334813b88940db0f1ca57b84cedfd552739c3a5771c3ea0e49988c9"
+
+install_private_python() {   # result: $WORK/runtime
+  local arch sha file
+  case "$(uname -m)" in
+    arm64|aarch64) arch=aarch64; sha=$PBS_SHA_ARM64;;
+    x86_64)        arch=x86_64;  sha=$PBS_SHA_X64;;
+    *) echo "unsupported processor: $(uname -m)"; return 1;;
+  esac
+  file="cpython-$PBS_VER+$PBS_TAG-$arch-apple-darwin-install_only_stripped.tar.gz"
+  curl -fsSL --retry 2 --max-time 300 "https://github.com/astral-sh/python-build-standalone/releases/download/$PBS_TAG/$file" -o "$WORK/pbs.tar.gz" || return 1
+  [ "$(shasum -a 256 "$WORK/pbs.tar.gz" | cut -d' ' -f1)" = "$sha" ] || { echo "python download did not match its checksum"; return 1; }
+  rm -rf "$WORK/pbs" "$WORK/runtime"; mkdir -p "$WORK/pbs"
+  tar xzf "$WORK/pbs.tar.gz" -C "$WORK/pbs" || return 1
+  [ -x "$WORK/pbs/python/bin/python3" ] || return 1
+  mv "$WORK/pbs/python" "$WORK/runtime"; rm -rf "$WORK/pbs" "$WORK/pbs.tar.gz"
+  xattr -dr com.apple.quarantine "$WORK/runtime" 2>/dev/null
+  python_ok "$WORK/runtime/bin/python3"
+}
 
 install_python_linux() {
   local pm="" cmd=""
@@ -236,7 +289,7 @@ download_natter() {
 }
 
 unpack_natter() {
-  python3 - "$WORK/natter.zip" "$WORK/out" <<'PY' || return 1
+  "$PYBIN" - "$WORK/natter.zip" "$WORK/out" <<'PY' || return 1
 import sys, zipfile
 z = zipfile.ZipFile(sys.argv[1])
 for n in z.namelist():
@@ -250,6 +303,9 @@ PY
   rm -rf "$DEST.old"
   [ -e "$DEST" ] && mv "$DEST" "$DEST.old"
   mv "$WORK/out/natter" "$DEST" || { [ -e "$DEST.old" ] && mv "$DEST.old" "$DEST"; return 1; }
+  # Natter's private Python lives in the Natter folder: a fresh one if we just made it, else keep the one already there.
+  if [ -d "$WORK/runtime" ]; then rm -rf "$DEST/runtime"; mv "$WORK/runtime" "$DEST/runtime"
+  elif [ -d "$DEST.old/runtime" ]; then mv "$DEST.old/runtime" "$DEST/runtime"; fi
   rm -rf "$DEST.old"
 }
 
@@ -280,6 +336,11 @@ Categories=Network;Chat;"
 
 # --------------------------------------------------------------------------------------------- hidden self-test
 
+if [ "${1:-}" = "--find-python" ]; then      # developer test: report what find_python would use
+  find_python && echo "FOUND: $PYBIN" || echo "FOUND: none"
+  exit 0
+fi
+
 if [ "${1:-}" = "--check-password" ]; then   # used by the developer to test the password box
   get_sudo && echo "RESULT: password accepted" || echo "RESULT: no access"
   exit 0
@@ -308,7 +369,18 @@ if have_python; then
 else
   warn "Natter needs a small helper program (Python), and it isn't here yet."
   if [ "$OS" = Darwin ]; then
-    install_python_mac || die "The Apple helper didn't finish installing. Please restart this installer after it completes."
+    blank
+    say "No problem. I'll add a private copy that only Natter uses."
+    say "${D}About 25 MB. No password, and nothing from Apple is needed.${R}"
+    blank
+    if work "Adding Natter's own helper program" install_private_python; then
+      PYBIN="$WORK/runtime/bin/python3"
+      good "The helper program is ready"
+    else
+      warn "That didn't work, so I'll ask Apple's helper to do it instead."
+      install_python_mac || die "The helper program didn't finish installing. Please restart this installer after it completes."
+      have_python || die "The helper program isn't working yet. Please restart this installer."
+    fi
   else
     install_python_linux; rc=$?
     PW=""
