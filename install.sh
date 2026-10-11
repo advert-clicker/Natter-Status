@@ -208,7 +208,7 @@ install_python_mac() {
   good "The Apple helper is ready"
 }
 
-download_natter() {
+download_natter_once() {
   curl -fsSL --retry 2 --max-time 30 "$REPO_RAW/version.txt?t=$(date +%s)" -o "$WORK/version.txt" || return 1
   VERSION=$(sed -n 1p "$WORK/version.txt" | tr -d '[:space:]')
   SHA=$(sed -n 2p "$WORK/version.txt" | tr -d '[:space:]')
@@ -220,7 +220,19 @@ download_natter() {
   local got
   if command -v shasum >/dev/null 2>&1; then got=$(shasum -a 256 "$WORK/natter.zip" | cut -d' ' -f1)
   else got=$(sha256sum "$WORK/natter.zip" | cut -d' ' -f1); fi
-  [ "$got" = "$SHA" ] || { echo "checksum mismatch: wanted $SHA got $got"; return 1; }
+  [ "$got" = "$SHA" ] || { echo "checksum mismatch: wanted $SHA got $got"; return 2; }
+}
+
+# GitHub can take a few minutes to show a brand-new release everywhere, so a mismatch is retried before giving up.
+download_natter() {
+  local attempt=1 rc
+  while [ $attempt -le 6 ]; do
+    download_natter_once; rc=$?
+    [ $rc -eq 0 ] && return 0
+    [ $rc -ne 2 ] && return $rc
+    attempt=$((attempt+1)); sleep 20
+  done
+  return 1
 }
 
 unpack_natter() {
