@@ -61,3 +61,11 @@ This repository is only the **delivery point** for Natter. The files are updated
 | `status.txt` | where the chat server currently lives (line 1: web address, line 2: chat server). The app reads this to find the server |
 
 Natter downloads updates only from this repository and checks each download against the checksum in `version.txt` before installing it.
+
+## Need help?
+
+Add my friend code in Natter (**Add a friend**, then paste it) and send me a message:
+
+```
+ncard1.AO17InNpZ24iOiJ5d0lHVXFHT2wzLW9rNUFyemM0ZXQ3anc3SlEteHBrOGhiaHJ3NkQxeDZRIiwiYm94IjoiMHVtanBnNTF2TUtxaUdKV3hqNFV0cndYU2dWTDNqZVBjV0hQQjN0RVZtTSIsImluYm94Ijoibmk1NzVxaXhibXhvdWNoNHpjYjdveXh6aXB2aXptM2dkcCIsInNlcnZlciI6Imh0dHBzOi8vYmVsaWV2ZXMtcmVjcnVpdG1lbnQtdGFja2xlLW1lbW9yeS50cnljbG91ZGZsYXJlLmNvbSIsIm5hbWUiOiJOb2xpIn3hk3p280febuy6b2Ae_Es2D_TCgXhul21Ucg0GBgjur7ddNDg2gSFRXqhAYLIVC_ZOpIWyy9cVsjs1Vm6pKqAJ
+```
