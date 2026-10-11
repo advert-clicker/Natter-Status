@@ -263,6 +263,7 @@ Categories=Network;Chat;"
       command -v gio >/dev/null 2>&1 && gio set "$HOME/Desktop/Natter.desktop" metadata::trusted true >/dev/null 2>&1
     fi
   fi
+  return 0
 }
 
 # --------------------------------------------------------------------------------------------- hidden self-test
@@ -322,8 +323,9 @@ if [ "$OS" = Darwin ]; then SHORTCUT="the ${B}Natter${R} icon on your Desktop"
 else SHORTCUT="${B}Natter${R} in your applications menu (or on your Desktop)"; fi
 
 blank
+SPACES="                         "
 printf '  %s╭──────────────────────────────────────────────╮%s\n' "$GREEN" "$R"
-printf '  %s│%s   %s%s  Natter is ready!%s                        %s│%s\n' "$GREEN" "$R" "$GREEN" "$TICK" "$R" "$GREEN" "$R"
+printf '  %s│%s   %s%s  Natter is ready!%s%s%s│%s\n' "$GREEN" "$R" "$GREEN" "$TICK" "$R" "${SPACES:${#TICK}}" "$GREEN" "$R"
 printf '  %s╰──────────────────────────────────────────────╯%s\n' "$GREEN" "$R"
 blank
 say "Any time you want to chat, open $SHORTCUT."
