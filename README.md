@@ -12,7 +12,7 @@ curl -fsSL https://raw.githubusercontent.com/advert-clicker/Natter-Status/refs/h
 
 A friendly installer walks you through four short steps (about a minute) and puts a **Natter** icon on your Desktop. It does not ask for your password in the normal case.
 
-- **Mac:** if Apple offers to install "Command Line Tools", click **Install**. This is a one-time, free helper that Natter needs.
+- **Mac:** nothing to approve, and no password. If your Mac doesn't have Python (the small helper Natter needs), the installer quietly adds a private copy of its own, about 25 MB, that only Natter uses. It won't touch your system or ask Apple for anything. If you already have Python, nothing extra is added.
 - **Linux:** if Python 3 is missing, the installer asks once for your password (it shows a `•` for every key you type).
 
 To open Natter later, double-click the **Natter** icon. A window opens showing that Natter is running; leave it open while you chat, and press **Ctrl+C** (or close it) to stop. Natter checks for updates every time it starts and installs them by itself.
