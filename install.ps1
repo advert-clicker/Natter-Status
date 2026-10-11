@@ -140,10 +140,14 @@ function Install-Natter {
             $name = 'natter-share.zip'
             if ($v.Count -gt 2) { $name = $v[2] }
             if ($name -notmatch '^[A-Za-z0-9._-]+\.zip$') { throw 'The update information looks wrong.' }
-            Invoke-WebRequest -UseBasicParsing -Uri ($repo + '/' + $name + '?t=' + $stamp) -OutFile $zip
-            $got = (Get-FileHash -Path $zip -Algorithm SHA256).Hash.ToLower()
-            if ($got -ne $v[1]) { throw 'The download did not match its checksum.' }
-            return $v[0]
+            # GitHub can take a few minutes to show a brand-new release everywhere, so a mismatch is retried.
+            for ($try = 1; $try -le 6; $try++) {
+                Invoke-WebRequest -UseBasicParsing -Uri ($repo + '/' + $name + '?t=' + $stamp + $try) -OutFile $zip
+                $got = (Get-FileHash -Path $zip -Algorithm SHA256).Hash.ToLower()
+                if ($got -eq $v[1]) { return $v[0] }
+                Start-Sleep -Seconds 20
+            }
+            throw 'The download did not match its checksum.' 
         } @($RepoRaw, $zipPath)
         Good ('Version ' + ($info | Select-Object -Last 1) + ' downloaded and checked')
 
