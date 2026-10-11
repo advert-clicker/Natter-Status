@@ -15,13 +15,19 @@ A friendly installer walks you through four short steps (about a minute) and put
 - **Mac:** if Apple offers to install "Command Line Tools", click **Install**. This is a one-time, free helper that Natter needs.
 - **Linux:** if Python 3 is missing, the installer asks once for your password (it shows a `•` for every key you type).
 
-To open Natter later, double-click the **Natter** icon. Natter checks for updates every time it starts and installs them by itself.
+To open Natter later, double-click the **Natter** icon. A window opens showing that Natter is running; leave it open while you chat, and press **Ctrl+C** (or close it) to stop. Natter checks for updates every time it starts and installs them by itself.
 
 ## Install (Windows)
 
-1. Install [Python 3](https://www.python.org/downloads/) (tick **Add python.exe to PATH**).
-2. [Download `natter-share.zip`](https://github.com/advert-clicker/Natter-Status/raw/refs/heads/main/natter-share.zip) and unzip it.
-3. Open the unzipped `natter` folder and double-click **`start-windows.bat`**.
+Press the **Start** button, type **PowerShell**, open it, paste this line and press Enter:
+
+```powershell
+irm https://raw.githubusercontent.com/advert-clicker/Natter-Status/refs/heads/main/install.ps1 | iex
+```
+
+The installer does the same four short steps and puts a **Natter** icon on your Desktop and in the Start menu. It never needs an administrator password. If your computer has no Python yet, it offers to add it for you (free, and only for your own account).
+
+Prefer to do it by hand? Install [Python 3](https://www.python.org/downloads/) (tick **Add python.exe to PATH**), [download `natter-share.zip`](https://github.com/advert-clicker/Natter-Status/raw/refs/heads/main/natter-share.zip), unzip it, and double-click **`start-windows.bat`** in the `natter` folder.
 
 ## First time
 
@@ -48,7 +54,8 @@ This repository is only the **delivery point** for Natter. The files are updated
 
 | File | What it is |
 |---|---|
-| `install.sh` | the installer shown above |
+| `install.sh` | the installer for Mac and Linux |
+| `install.ps1` | the installer for Windows |
 | `natter-share.zip` | the current Natter app |
 | `version.txt` | the current version number and the zip's checksum; installed copies use it to update themselves |
 | `status.txt` | where the chat server currently lives (line 1: web address, line 2: chat server). The app reads this to find the server |
